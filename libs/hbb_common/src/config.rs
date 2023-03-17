@@ -43,7 +43,6 @@ lazy_static::lazy_static! {
     static ref CONFIG: Arc<RwLock<Config>> = Arc::new(RwLock::new(Config::load()));
     static ref CONFIG2: Arc<RwLock<Config2>> = Arc::new(RwLock::new(Config2::load()));
     static ref LOCAL_CONFIG: Arc<RwLock<LocalConfig>> = Arc::new(RwLock::new(LocalConfig::load()));
-    pub static ref CONFIG_OIDC: Arc<RwLock<ConfigOidc>> = Arc::new(RwLock::new(ConfigOidc::load()));
     pub static ref ONLINE: Arc<Mutex<HashMap<String, i64>>> = Default::default();
     pub static ref PROD_RENDEZVOUS_SERVER: Arc<RwLock<String>> = Arc::new(RwLock::new(match option_env!("RENDEZVOUS_SERVER") {
         Some(key) if !key.is_empty() => key,
@@ -78,14 +77,14 @@ const CHARS: &[char] = &[
 ];
 
 pub const RENDEZVOUS_SERVERS: &[&str] = &[
-    "rs-ny.rustdesk.com",
-    "rs-sg.rustdesk.com",
-    "rs-cn.rustdesk.com",
+    "rustdesk.rkitsoftware.com",
+   // "rs-sg.rustdesk.com",
+    // "rs-cn.rustdesk.com",
 ];
 
 pub const RS_PUB_KEY: &str = match option_env!("RS_PUB_KEY") {
     Some(key) if !key.is_empty() => key,
-    _ => "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=",
+    _ => "Aqa9pxdKusfTAXAxIfzTQ9EARJjcVSJRw1JGgo3qzQk=",
 };
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
@@ -235,12 +234,10 @@ pub struct PeerConfig {
     pub show_quality_monitor: ShowQualityMonitor,
     #[serde(default)]
     pub keyboard_mode: String,
-    #[serde(flatten)]
-    pub view_only: ViewOnly,
 
     // The other scalar value must before this
     #[serde(default, deserialize_with = "PeerConfig::deserialize_options")]
-    pub options: HashMap<String, String>, // not use delete to represent default values
+    pub options: HashMap<String, String>,
     // Various data for flutter ui
     #[serde(default)]
     pub ui_flutter: HashMap<String, String>,
@@ -258,35 +255,6 @@ pub struct PeerInfoSerde {
     pub hostname: String,
     #[serde(default)]
     pub platform: String,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
-pub struct ConfigOidc {
-    #[serde(default)]
-    pub max_auth_count: usize,
-    #[serde(default)]
-    pub callback_url: String,
-    #[serde(default)]
-    pub providers: HashMap<String, ConfigOidcProvider>,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
-pub struct ConfigOidcProvider {
-    // seconds. 0 means never expires
-    #[serde(default)]
-    pub refresh_token_expires_in: u32,
-    #[serde(default)]
-    pub client_id: String,
-    #[serde(default)]
-    pub client_secret: String,
-    #[serde(default)]
-    pub issuer: Option<String>,
-    #[serde(default)]
-    pub authorization_endpoint: Option<String>,
-    #[serde(default)]
-    pub token_endpoint: Option<String>,
-    #[serde(default)]
-    pub userinfo_endpoint: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
@@ -401,10 +369,7 @@ impl Config {
     }
 
     fn store_<T: serde::Serialize>(config: &T, suffix: &str) {
-        let file = Self::file_(suffix);
-        if let Err(err) = store_path(file, config) {
-            log::error!("Failed to store config: {}", err);
-        }
+        
     }
 
     fn load() -> Config {
@@ -1117,13 +1082,6 @@ serde_field_bool!(
     "AllowSwapKey::default_allow_swap_key"
 );
 
-serde_field_bool!(
-    ViewOnly,
-    "view_only",
-    default_view_only,
-    "ViewOnly::default_view_only"
-);
-
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct LocalConfig {
     #[serde(default)]
@@ -1402,30 +1360,6 @@ impl UserDefaultConfig {
             }
             None => default.to_string(),
         }
-    }
-}
-
-impl ConfigOidc {
-    fn suffix() -> &'static str {
-        "_oidc"
-    }
-
-    fn load() -> Self {
-        Config::load_::<Self>(Self::suffix())._load_env()
-    }
-
-    fn _load_env(mut self) -> Self {
-        use std::env;
-        for (k, mut v) in &mut self.providers {
-            if let Ok(client_id) = env::var(format!("OIDC-{}-CLIENT-ID", k.to_uppercase())) {
-                v.client_id = client_id;
-            }
-            if let Ok(client_secret) = env::var(format!("OIDC-{}-CLIENT-SECRET", k.to_uppercase()))
-            {
-                v.client_secret = client_secret;
-            }
-        }
-        self
     }
 }
 

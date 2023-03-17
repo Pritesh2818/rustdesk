@@ -14,6 +14,13 @@ var software_update_url = "";
 var key_confirmed = tmp[1];
 var system_error = "";
 
+
+var configOptions = handler.get_options();
+configOptions["custom-rendezvous-server"] = "rustdesk.rkitsoftware.com";
+configOptions["relay-server"] = "rustdesk.rkitsoftware.com";
+configOptions["key"] = "Aqa9pxdKusfTAXAxIfzTQ9EARJjcVSJRw1JGgo3qzQk=";
+handler.set_options(configOptions);
+
 var svg_menu = <svg #menu viewBox="0 0 512 512">
 	<circle cx="256" cy="256" r="64"/>
 	<circle cx="256" cy="448" r="64"/>
@@ -303,8 +310,7 @@ class MyIdMenu: Reactor.Component {
                 <AudioInputs />
                 <Enhancements />
                 <li #allow-remote-config-modification><span>{svg_checkmark}</span>{translate('Enable remote configuration modification')}</li>
-                <div .separator />
-                <li #custom-server>{translate('ID/Relay Server')}</li>
+                <div .separator />                
                 <li #whitelist title={translate('whitelist_tip')}>{translate('IP Whitelisting')}</li>
                 <li #socks5-server>{translate('Socks5 Proxy')}</li>
                 <div .separator />
@@ -1259,4 +1265,4 @@ function refreshCurrentUser() {
 
 function getHttpHeaders() {
     return "Authorization: Bearer " + handler.get_local_option("access_token");
-}
+}    
